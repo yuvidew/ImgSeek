@@ -175,36 +175,53 @@
     <div id="results" class="results"></div>
 
     <script>
+        // Base URL of the FastAPI backend server.
         const API = "http://127.0.0.1:8000";
 
+        // Allow pressing Enter in the search input to trigger a search.
         document.getElementById("query").addEventListener("keydown", e => {
             if (e.key === "Enter") search();
         });
 
+        /**
+         * search() — Sends the user's text query to the backend /search endpoint,
+         * receives matching image results, and renders them as cards in the page.
+         */
         async function search() {
+            // Read and trim the query from the input field; do nothing if empty.
             const query = document.getElementById("query").value.trim();
             if (!query) return;
 
+            // Grab DOM references for the status message and results container.
             const status = document.getElementById("status");
             const div = document.getElementById("results");
 
+            // Show a "Searching..." indicator and clear previous results.
             status.textContent = "Searching...";
             div.innerHTML = "";
 
             try {
+                // Call the backend API with the query (URL-encoded for safety).
                 const res = await fetch(`${API}/search?query=${encodeURIComponent(query)}`);
+                // Parse the JSON response: { results: [{path, score}, ...] }
                 const data = await res.json();
 
+                // Update the status bar with the count of matches found.
                 status.textContent = `Found ${data.results.length} result(s)`;
 
+                // If no images matched, show a friendly empty-state message.
                 if (data.results.length === 0) {
                     div.innerHTML = `<div class="empty"><div class="icon">&#128269;</div>No matching images found</div>`;
                     return;
                 }
 
+                // Render each matching image as a card with thumbnail, filename, and score.
                 data.results.forEach(img => {
+                    // Extract just the filename from the full path for display.
                     const filename = img.path.split("/").pop();
+                    // Build the full image URL by appending the relative path to the API base.
                     const imgUrl = `${API}/${img.path}`;
+                    // Append a card element with the image, its name, and similarity percentage.
                     div.innerHTML += `
             <div class="card">
               <img src="${imgUrl}" alt="${filename}" loading="lazy">
@@ -216,6 +233,7 @@
           `;
                 });
             } catch (err) {
+                // If the fetch fails (e.g. server is down), show an error message.
                 status.textContent = "Error connecting to server";
                 console.error(err);
             }
